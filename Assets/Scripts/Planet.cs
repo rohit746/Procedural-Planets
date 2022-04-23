@@ -4,25 +4,32 @@ public class Planet : MonoBehaviour {
 
     [Range(2,256)]
     public int resolution = 10;
+    public bool autoUpdate = true;
+
+    public ShapeSettings shapeSettings;
+    public ColourSettings colourSettings;
+
+    [HideInInspector]
+    public bool shapeSettingsFoldout;
+    [HideInInspector]
+    public bool colourSettingsFoldout;
+
+    ShapeGenerator shapeGenerator;
 
     [SerializeField, HideInInspector]
     MeshFilter[] meshFilters;
+    TerrainFace[] terrainFaces;
+     
 
-    private TerrainFace[] _terrainFaces;
-
-    private void OnValidate()
+	void Initialize()
     {
-        Initialize();
-        GenerateMesh();
-    }
+        shapeGenerator = new ShapeGenerator(shapeSettings);
 
-    void Initialize()
-    {
         if (meshFilters == null || meshFilters.Length == 0)
         {
             meshFilters = new MeshFilter[6];
         }
-        _terrainFaces = new TerrainFace[6];
+        terrainFaces = new TerrainFace[6];
 
         Vector3[] directions = { Vector3.up, Vector3.down, Vector3.left, Vector3.right, Vector3.forward, Vector3.back };
 
@@ -38,15 +45,48 @@ public class Planet : MonoBehaviour {
                 meshFilters[i].sharedMesh = new Mesh();
             }
 
-            _terrainFaces[i] = new TerrainFace(meshFilters[i].sharedMesh, resolution, directions[i]);
+            terrainFaces[i] = new TerrainFace(shapeGenerator, meshFilters[i].sharedMesh, resolution, directions[i]);
+        }
+    }
+
+    public void GeneratePlanet()
+    {
+        Initialize();
+        GenerateMesh();
+        GenerateColours();
+    }
+
+    public void OnShapeSettingsUpdated()
+    {
+        if (autoUpdate)
+        {
+            Initialize();
+            GenerateMesh();
+        }
+    }
+
+    public void OnColourSettingsUpdated()
+    {
+        if (autoUpdate)
+        {
+            Initialize();
+            GenerateColours();
         }
     }
 
     void GenerateMesh()
     {
-        foreach (TerrainFace face in _terrainFaces)
+        foreach (TerrainFace face in terrainFaces)
         {
             face.ConstructMesh();
+        }
+    }
+
+    void GenerateColours()
+    {
+        foreach (MeshFilter m in meshFilters)
+        {
+            m.GetComponent<MeshRenderer>().sharedMaterial.color = colourSettings.planetColour;
         }
     }
 }
